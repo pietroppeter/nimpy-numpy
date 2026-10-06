@@ -60,12 +60,42 @@ array([[1., 1., 1.],
   the array to Python is safe.
 - Views given to a proc as parameters are read-only; use `asNumpyArray[T](obj, writable = true)`
   to modify an array in place.
-- Indices are bounds-checked unless compiled with `-d:danger`, which makes the `vander` above
-  noticeably faster. How it compares with `numpy.vander` depends on the machine: see
-  [Benchmark](#benchmark).
+- Indices are bounds-checked unless compiled with `-d:danger`. How the `vander` above compares
+  with `numpy.vander` depends on the machine: see [Benchmark](#benchmark).
 
 Supported element types: `float32`, `float64`, signed and unsigned integers of 8 to 64 bits,
 and `bool`.
+
+## Fast path for contiguous arrays
+
+`x[i]` and `result[i, j]` work for any array, strided or not, but each access recomputes the
+element's address from the shape and strides. Most arrays are *C-contiguous*: their elements sit
+row after row in one buffer with no gaps (every array from `newNumpyArray`, and any plain
+`np.array`). For those, `toOpenArray` gives the elements as one flat `openArray[T]`, where
+element `[i, j]` of an `m×n` array is at `i * n + j`. That lets the inner loop be a plain Nim
+proc that knows nothing about numpy:
+
+```nim
+proc fillVander(v: var openArray[float64], x: openArray[float64], n: int, increasing: bool) =
+  let (first, step) = if increasing: (0, 1) else: (n - 1, -1)
+  for i, xi in x:
+    var p = 1.0
+    var k = i * n + first
+    for j in 0 ..< n:
+      v[k] = p
+      p *= xi
+      k += step
+
+proc vander_fast(x: NumpyArray[float64], n: int = -1, increasing: bool = false): NumpyArray[float64] {.exportpy.} =
+  let x = x.asContiguous    # a copy only if x is strided, e.g. x[::2]
+  let n = if n < 0: x.len else: n
+  result = newNumpyArray[float64](x.len, n)   # new arrays are always C-contiguous
+  fillVander(result.toOpenArray, x.toOpenArray, n, increasing)
+```
+
+Accesses to the openArray are still bounds-checked (one comparison instead of the full index
+computation), so a bug raises an error in Python rather than crashing it. Both versions are in
+[tests/vander.nim](tests/vander.nim).
 
 ## API
 
@@ -75,6 +105,9 @@ and `bool`.
 | `asNumpyArray[T](obj, writable = false)` | view on a numpy array given as `PyObject` |
 | `newNumpyArray[T](shape)` | new uninitialized numpy array |
 | `a[i, j, ...]`, `a[i, j, ...] = v` | element access, one index per dimension |
+| `a.toOpenArray` | the elements as one flat, row-major `openArray[T]` (C-contiguous only) |
+| `a.asContiguous` | `a` itself if C-contiguous, else a contiguous copy |
+| `a.unsafeData` | raw `ptr UncheckedArray[T]` to the elements (C-contiguous only, never checked) |
 | `ndim`, `len`, `size`, `isCContiguous` | as in numpy |
 | `toPyObject(a)` | the underlying numpy array |
 | `dtypeName(T)` | numpy dtype name for `T`, e.g. `"float64"` |
@@ -92,22 +125,23 @@ Requires Nim 2.0 or later and nimpy 0.2.1 or later.
 
 ## Benchmark
 
-`uv run python benchmark.py` builds `tests/vander.nim` with `-d:release` and `-d:danger`, times
-both against `numpy.vander` and a pure Python version, and prints a Markdown table (not run in CI):
+`uv run python benchmark.py` builds `tests/vander.nim` with `-d:release` (the default) and
+`-d:danger`, times `vander` and `vander_fast` against `numpy.vander` and a pure Python version,
+and prints a Markdown table (not run in CI).
 
 Results vary a lot between machines (and between runs for large arrays), so run it on yours
-rather than reading too much into these two examples. In parentheses, time relative to `np.vander`.
+rather than reading too much into these examples. In parentheses, time relative to `np.vander`.
 
 Linux x86_64 (cloud VM), Python 3.13, numpy 2.5:
 
-| n | np.vander | Nim -d:release | Nim -d:danger | pure Python |
-|---:|---:|---:|---:|---:|
-| 10 | 3.29 µs | 2.36 µs (0.72x) | 1.89 µs (0.58x) | 6.6 µs (2x) |
-| 100 | 48 µs | 53.5 µs (1.1x) | 17.7 µs (0.37x) | 630 µs (13x) |
-| 1000 | 3.9 ms | 5.05 ms (1.3x) | 2.09 ms (0.54x) | 106 ms (27x) |
-| 3000 | 97.5 ms | 102 ms (1x) | 72.9 ms (0.75x) | not run |
+| n | np.vander | vander | vander_fast | vander -d:danger | vander_fast -d:danger | pure Python |
+|---:|---:|---:|---:|---:|---:|---:|
+| 10 | 3.55 µs | 2.16 µs (0.61x) | 1.77 µs (0.5x) | 1.67 µs (0.47x) | 1.87 µs (0.53x) | 6.62 µs (1.9x) |
+| 100 | 38 µs | 54.1 µs (1.4x) | 13.8 µs (0.36x) | 18.8 µs (0.49x) | 11.1 µs (0.29x) | 647 µs (17x) |
+| 1000 | 4.13 ms | 5.41 ms (1.3x) | 1.96 ms (0.47x) | 2.24 ms (0.54x) | 1.89 ms (0.46x) | 103 ms (25x) |
+| 3000 | 100 ms | 107 ms (1.1x) | 71.2 ms (0.71x) | 84.3 ms (0.84x) | 72.7 ms (0.73x) | not run |
 
-macOS arm64 (Apple silicon), Python 3.13, numpy 2.5:
+macOS arm64 (Apple silicon), Python 3.13, numpy 2.5, before `vander_fast` existed:
 
 | n | np.vander | Nim -d:release | Nim -d:danger | pure Python |
 |---:|---:|---:|---:|---:|

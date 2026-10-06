@@ -2,14 +2,16 @@ import numpy as np
 import pytest
 
 import checks
-from vander import vander
+from vander import vander, vander_fast
 
 
+@pytest.mark.parametrize("f", [vander, vander_fast])
 @pytest.mark.parametrize("x", [np.array([1.0, 2.0, 3.0, 5.0]), np.linspace(-1, 1, 7), np.array([])])
-def test_vander(x):
-    np.testing.assert_array_equal(vander(x), np.vander(x))
-    np.testing.assert_array_equal(vander(x, 3), np.vander(x, 3))
-    np.testing.assert_array_equal(vander(x, increasing=True), np.vander(x, increasing=True))
+def test_vander(f, x):
+    np.testing.assert_array_equal(f(x), np.vander(x))
+    np.testing.assert_array_equal(f(x, 3), np.vander(x, 3))
+    np.testing.assert_array_equal(f(x, 0), np.vander(x, 0))
+    np.testing.assert_array_equal(f(x, increasing=True), np.vander(x, increasing=True))
 
 
 def test_vander_returns_ndarray():
@@ -19,9 +21,10 @@ def test_vander_returns_ndarray():
     assert v.flags.c_contiguous and v.flags.owndata
 
 
-def test_vander_strided_input_is_not_copied():
+@pytest.mark.parametrize("f", [vander, vander_fast])
+def test_vander_strided_input(f):
     x = np.arange(20.0)[::3]
-    np.testing.assert_array_equal(vander(x), np.vander(x))
+    np.testing.assert_array_equal(f(x), np.vander(x))
 
 
 def test_vander_rejects_wrong_dtype_and_ndim():
@@ -74,3 +77,13 @@ def test_index_out_of_bounds():
     x = np.zeros((2, 3, 4), dtype=np.int64)
     with pytest.raises(Exception, match="out of bounds for axis 1"):
         checks.get3(x, 0, 3, 0)
+
+
+def test_flat_views():
+    x = np.arange(12.0).reshape(3, 4)
+    assert checks.sum_flat(x) == x.sum()
+    with pytest.raises(Exception, match="not C-contiguous"):
+        checks.sum_flat(x.T)
+    assert checks.sum_contiguous(x.T) == x.sum()
+    assert checks.sum_contiguous(x[:, ::2]) == x[:, ::2].sum()
+    assert checks.raw_first(np.array([7, 8], dtype=np.int64)) == 7

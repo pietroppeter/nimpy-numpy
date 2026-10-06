@@ -147,6 +147,37 @@ proc `[]=`*[T](a: var NumpyArray[T], idx: varargs[int], value: T) {.inline.} =
   if not a.writable: readOnlyError()
   a.elementAt(idx)[] = value
 
+# Fast path for C-contiguous arrays: one flat buffer instead of per-index
+# address arithmetic.
+
+proc notContiguousError() {.noinline, noreturn.} =
+  raise newException(ValueError, "nimpy_numpy: array is not C-contiguous; " &
+    "use asContiguous (or numpy.ascontiguousarray) first")
+
+proc unsafeData*[T](a: NumpyArray[T]): ptr UncheckedArray[T] =
+  ## Raw pointer to the elements of a C-contiguous array, in row-major order.
+  ## Raises `ValueError` if the array is not C-contiguous. Accesses through
+  ## the pointer are never bounds-checked; prefer `toOpenArray`.
+  if not a.isCContiguous: notContiguousError()
+  cast[ptr UncheckedArray[T]](a.data)
+
+template toOpenArray*[T](a: NumpyArray[T]): openArray[T] =
+  ## The elements of a C-contiguous array as one flat `openArray`, in
+  ## row-major order: element ``[i, j]`` of an ``m×n`` array is at
+  ## ``i * n + j``. Raises `ValueError` if the array is not C-contiguous.
+  ## Accesses are bounds-checked unless compiled with ``-d:danger``.
+  ##
+  ## The openArray is always writable, even for a read-only view: only pass
+  ## it as `var openArray` for arrays you created or asked for as writable.
+  a.unsafeData.toOpenArray(0, a.size - 1)
+
+proc asContiguous*[T](a: NumpyArray[T]): NumpyArray[T] =
+  ## `a` itself if it is C-contiguous, else a C-contiguous copy
+  ## (``numpy.ascontiguousarray``).
+  if a.isCContiguous: return a
+  let np = pyImport("numpy")
+  asNumpyArray[T](np.ascontiguousarray(a.obj))
+
 # nimpy conversion hooks, so that exported procs take and return NumpyArray[T].
 
 proc pyValueToNim*[T: NumpyElement](v: PPyObject, o: var NumpyArray[T]) =
