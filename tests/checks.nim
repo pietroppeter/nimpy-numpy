@@ -28,3 +28,12 @@ proc get3(x: NumpyArray[int64], i, j, k: int): int64 {.exportpy.} =
 proc ints(n: int): NumpyArray[int] {.exportpy.} =
   result = newNumpyArray[int](n)
   for i in 0 ..< n: result[i] = i * i
+
+proc sum_flat(x: NumpyArray[float64]): float64 {.exportpy.} =
+  for v in x.toOpenArray: result += v
+
+proc sum_contiguous(x: NumpyArray[float64]): float64 {.exportpy.} =
+  for v in x.asContiguous.toOpenArray: result += v
+
+proc raw_first(x: NumpyArray[int64]): int64 {.exportpy.} =
+  x.unsafeData[0]
