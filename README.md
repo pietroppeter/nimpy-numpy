@@ -3,6 +3,8 @@
 numpy arrays for Python-Nim interoperability using [nimpy](https://github.com/yglukhov/nimpy): write Nim procs that take and
 return numpy arrays, and call them from Python.
 
+> AI disclosure: this project is mostly vibed. Currently [level 7](https://www.visidata.org/blog/2026/ai/#level-6%3A-bots-coded%2C-human-understands-mostly) on visidata AI scale: Human specced, bots coded.
+
 ## Example
 
 We want to write a nim version for computing a [Vandermonde matrix](https://en.wikipedia.org/wiki/Vandermonde_matrix). We will need a Nim file, `vander.nim`, compiled into a Python extension module and imported from Python.
