@@ -150,8 +150,9 @@ macOS arm64 (Apple silicon), Python 3.13, numpy 2.5:
 | 1000 | 1.29 ms | 3.95 ms (3x) | 1.19 ms (0.92x) | 1.31 ms (1x) | 1.17 ms (0.91x) | 55.8 ms (43x) |
 | 3000 | 12.9 ms | 35.8 ms (2.8x) | 11 ms (0.86x) | 12.1 ms (0.94x) | 10.9 ms (0.85x) | not run |
 
-On both machines, with the default build, `vander_fast` is 3 to 4x faster than `vander` and a
-bit faster than `np.vander`; `-d:danger` adds little on top of it.
+On both machines, with the default build, `vander_fast` is about 3x faster than `vander` for 100
+to 1000 points and faster than `np.vander` (slightly on the Mac, about 2x on the Linux VM);
+`-d:danger` adds little on top of it.
 
 ## Development
 
