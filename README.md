@@ -3,6 +3,17 @@
 numpy arrays for [nimpy](https://github.com/yglukhov/nimpy): write Nim procs that take and
 return numpy arrays, and call them from Python.
 
+A Nim file, `vander.nim`, compiled into a Python extension module and imported from Python.
+With [nimlang](https://github.com/pietroppeter/uv-add-nimlang) the whole round trip is:
+
+```sh
+uv init vander-demo && cd vander-demo
+uv add nimlang numpy
+uv run nimlang add nimpy https://github.com/pietroppeter/nimpy-numpy   # Nim deps
+```
+
+Write `vander.nim`:
+
 ```nim
 import nimpy, nimpy_numpy
 
@@ -18,9 +29,19 @@ proc vander(x: NumpyArray[float64], n: int = -1): NumpyArray[float64] {.exportpy
       p *= x[i]
 ```
 
+Compile it into the Python extension module `vander` (`vander.cpython-*.so`, or `.pyd` on
+Windows), written next to it:
+
+```sh
+uv run nimlang build-ext vander.nim
+```
+
+and import it from Python (`uv run python`):
+
 ```python
->>> import numpy as np, vander
->>> vander.vander(np.array([1.0, 2.0, 3.0]))
+>>> import numpy as np
+>>> from vander import vander
+>>> vander(np.array([1.0, 2.0, 3.0]))
 array([[1., 1., 1.],
        [4., 2., 1.],
        [9., 3., 1.]])
@@ -37,7 +58,8 @@ array([[1., 1., 1.],
 - Views given to a proc as parameters are read-only; use `asNumpyArray[T](obj, writable = true)`
   to modify an array in place.
 - Indices are bounds-checked unless compiled with `-d:danger`. With `-d:danger` the `vander`
-  above runs about as fast as `numpy.vander`.
+  above is faster than `numpy.vander` (about 2x for 100 to 1000 points); with the default
+  `-d:release` it is about 1.2x slower.
 
 Supported element types: `float32`, `float64`, signed and unsigned integers of 8 to 64 bits,
 and `bool`.
@@ -60,9 +82,8 @@ and `bool`.
 nimble install https://github.com/pietroppeter/nimpy-numpy
 ```
 
-or, in a Python project that builds its Nim extension with
-[nimlang](https://github.com/pietroppeter/uv-add-nimlang), add it to `[tool.nimlang]` in
-`pyproject.toml`.
+or, in a Python project that builds its Nim extensions with nimlang,
+`uv run nimlang add https://github.com/pietroppeter/nimpy-numpy` (as in the example above).
 
 Requires Nim 2.0 or later and nimpy 0.2.1 or later.
 
