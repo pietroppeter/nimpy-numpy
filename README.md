@@ -1,10 +1,13 @@
 # nimpy-numpy
 
-numpy arrays for [nimpy](https://github.com/yglukhov/nimpy): write Nim procs that take and
+numpy arrays for Python-Nim interoperability using [nimpy](https://github.com/yglukhov/nimpy): write Nim procs that take and
 return numpy arrays, and call them from Python.
 
-A Nim file, `vander.nim`, compiled into a Python extension module and imported from Python.
-With [nimlang](https://github.com/pietroppeter/uv-add-nimlang) the whole round trip is:
+## Example
+
+We want to write a nim version for computing a [Vandermonde matrix](https://en.wikipedia.org/wiki/Vandermonde_matrix). We will need a Nim file, `vander.nim`, compiled into a Python extension module and imported from Python.
+
+With Python package [nimlang](https://github.com/pietroppeter/uv-add-nimlang) the whole round trip is:
 
 ```sh
 uv init vander-demo && cd vander-demo
