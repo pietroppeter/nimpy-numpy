@@ -26,9 +26,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - name: Tests
         run: uv run pytest -v -p no:cacheprovider tests
-      - name: timeit vander (-d:danger) vs numpy.vander
-        run: |
-          uv run nimlang build-ext tests/vander.nim --nim-arg=-d:danger
-          cd tests
-          uv run python -m timeit -s "import numpy as np; from vander import vander; x = np.random.rand(1000)" "vander(x)"
-          uv run python -m timeit -s "import numpy as np; x = np.random.rand(1000)" "np.vander(x)"
+      - name: Benchmark vander (Nim vs numpy vs pure Python)
+        env:
+          PYTHONUTF8: "1"
+        run: uv run python benchmark.py --sizes 10 100 1000 | tee -a "$GITHUB_STEP_SUMMARY"
