@@ -60,9 +60,9 @@ array([[1., 1., 1.],
   the array to Python is safe.
 - Views given to a proc as parameters are read-only; use `asNumpyArray[T](obj, writable = true)`
   to modify an array in place.
-- Indices are bounds-checked unless compiled with `-d:danger`. With `-d:danger` the `vander`
-  above is faster than `numpy.vander` (about 2x for 100 to 1000 points); with the default
-  `-d:release` it is about as fast or up to 1.3x slower. See [Benchmark](#benchmark).
+- Indices are bounds-checked unless compiled with `-d:danger`, which makes the `vander` above
+  noticeably faster. How it compares with `numpy.vander` depends on the machine: see
+  [Benchmark](#benchmark).
 
 Supported element types: `float32`, `float64`, signed and unsigned integers of 8 to 64 bits,
 and `bool`.
@@ -95,6 +95,11 @@ Requires Nim 2.0 or later and nimpy 0.2.1 or later.
 `uv run python benchmark.py` builds `tests/vander.nim` with `-d:release` and `-d:danger`, times
 both against `numpy.vander` and a pure Python version, and prints a Markdown table (not run in CI):
 
+Results vary a lot between machines (and between runs for large arrays), so run it on yours
+rather than reading too much into these two examples. In parentheses, time relative to `np.vander`.
+
+Linux x86_64 (cloud VM), Python 3.13, numpy 2.5:
+
 | n | np.vander | Nim -d:release | Nim -d:danger | pure Python |
 |---:|---:|---:|---:|---:|
 | 10 | 3.29 µs | 2.36 µs (0.72x) | 1.89 µs (0.58x) | 6.6 µs (2x) |
@@ -102,7 +107,17 @@ both against `numpy.vander` and a pure Python version, and prints a Markdown tab
 | 1000 | 3.9 ms | 5.05 ms (1.3x) | 2.09 ms (0.54x) | 106 ms (27x) |
 | 3000 | 97.5 ms | 102 ms (1x) | 72.9 ms (0.75x) | not run |
 
-Linux x86_64, Python 3.13, numpy 2.5; in parentheses, time relative to `np.vander`.
+macOS arm64 (Apple silicon), Python 3.13, numpy 2.5:
+
+| n | np.vander | Nim -d:release | Nim -d:danger | pure Python |
+|---:|---:|---:|---:|---:|
+| 10 | 1.58 µs | 1.05 µs (0.66x) | 761 ns (0.48x) | 3.91 µs (2.5x) |
+| 100 | 11.3 µs | 37.7 µs (3.3x) | 10.6 µs (0.94x) | 402 µs (35x) |
+| 1000 | 1.29 ms | 3.92 ms (3x) | 1.3 ms (1x) | 55.2 ms (43x) |
+| 3000 | 12.9 ms | 35.7 ms (2.8x) | 12.2 ms (0.95x) | not run |
+
+On the Mac, `-d:danger` is on par with numpy and `-d:release` up to about 3x slower; at
+n = 3000, numpy took 30.6 ms in one run and 12.9 ms in the next.
 
 ## Development
 
