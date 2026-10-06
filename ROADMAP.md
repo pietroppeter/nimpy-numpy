@@ -10,4 +10,3 @@
   needs neither Python nor numpy, for pure Nim projects. `toNumpy` would hand one to Python,
   first by copying, later without a copy (keep the Nim memory alive with a capsule as the numpy
   array's `base`). Overlaps with Arraymancer's `Tensor`, which may cover this use case instead.
-- Publish to the nimble package directory.

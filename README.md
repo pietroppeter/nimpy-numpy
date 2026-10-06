@@ -14,7 +14,7 @@ With Python package [nimlang](https://github.com/pietroppeter/uv-add-nimlang) th
 ```sh
 uv init vander-demo && cd vander-demo
 uv add nimlang numpy
-uv run nimlang add nimpy https://github.com/pietroppeter/nimpy-numpy   # Nim deps
+uv run nimlang add nimpy nimpy_numpy   # Nim deps
 ```
 
 Write `vander.nim`:
@@ -117,11 +117,11 @@ computation), so a bug raises an error in Python rather than crashing it. Both v
 ## Install
 
 ```sh
-nimble install https://github.com/pietroppeter/nimpy-numpy
+nimble install nimpy_numpy
 ```
 
 or, in a Python project that builds its Nim extensions with nimlang,
-`uv run nimlang add https://github.com/pietroppeter/nimpy-numpy` (as in the example above).
+`uv run nimlang add nimpy_numpy` (as in the example above).
 
 Requires Nim 2.0 or later and nimpy 0.2.1 or later.
 
