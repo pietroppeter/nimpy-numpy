@@ -8,8 +8,10 @@ times each implementation and prints a Markdown table.
 """
 
 import argparse
+import importlib.machinery
 import importlib.util
 import platform
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -27,7 +29,9 @@ def build(out_dir: Path, *nim_args: str):
     cmd = [sys.executable, "-m", "nimlang", "build-ext", str(HERE / "tests" / "vander.nim"), "-o", str(out_dir)]
     cmd += [f"--nim-arg={a}" for a in nim_args]
     subprocess.run(cmd, check=True, capture_output=True)
-    (path,) = [p for p in out_dir.iterdir() if p.name.startswith("vander.")]
+    # Only the extension module itself (Windows also leaves .lib/.exp files next to the .pyd).
+    suffixes = tuple(importlib.machinery.EXTENSION_SUFFIXES)
+    (path,) = [p for p in out_dir.iterdir() if p.name.startswith("vander.") and p.name.endswith(suffixes)]
     spec = importlib.util.spec_from_file_location("vander", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -62,7 +66,9 @@ def main():
     args = parser.parse_args()
 
     subprocess.run([sys.executable, "-m", "nimlang", "sync"], check=True, cwd=HERE, capture_output=True)
-    with tempfile.TemporaryDirectory() as tmp:
+    # Not a TemporaryDirectory: on Windows the loaded .pyd files can't be deleted until exit.
+    tmp = tempfile.mkdtemp(prefix="nimpy-numpy-bench-")
+    try:
         nim_release = build(Path(tmp) / "release")
         nim_danger = build(Path(tmp) / "danger", "-d:danger")
 
@@ -88,6 +94,8 @@ def main():
             print(f"| {n} | {fmt(t_np)} | {cell(t_rel)} | {cell(t_dan)} | {cell(t_py)} |")
         print()
         print("In parentheses: time relative to np.vander (lower is faster).")
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
 
 
 if __name__ == "__main__":
