@@ -93,7 +93,7 @@ Requires Nim 2.0 or later and nimpy 0.2.1 or later.
 ## Benchmark
 
 `uv run python benchmark.py` builds `tests/vander.nim` with `-d:release` and `-d:danger`, times
-both against `numpy.vander` and a pure Python version, and prints a Markdown table:
+both against `numpy.vander` and a pure Python version, and prints a Markdown table (not run in CI):
 
 | n | np.vander | Nim -d:release | Nim -d:danger | pure Python |
 |---:|---:|---:|---:|---:|
