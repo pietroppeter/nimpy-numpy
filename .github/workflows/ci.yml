@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  # Builds the Nim test modules with nimlang (Nim from a Python wheel, C compiled by zig)
+  # and checks them against numpy, on every platform nimlang ships wheels for.
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-14, macos-15-intel, windows-latest]
+        python: ["3.9", "3.14"]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Tests
+        run: uv run pytest -v -p no:cacheprovider tests
+      - name: timeit vander (-d:danger) vs numpy.vander
+        run: |
+          uv run nimlang build-ext tests/vander.nim --nim-arg=-d:danger
+          cd tests
+          uv run python -m timeit -s "import numpy as np; from vander import vander; x = np.random.rand(1000)" "vander(x)"
+          uv run python -m timeit -s "import numpy as np; x = np.random.rand(1000)" "np.vander(x)"
