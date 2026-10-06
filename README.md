@@ -141,17 +141,17 @@ Linux x86_64 (cloud VM), Python 3.13, numpy 2.5:
 | 1000 | 4.13 ms | 5.41 ms (1.3x) | 1.96 ms (0.47x) | 2.24 ms (0.54x) | 1.89 ms (0.46x) | 103 ms (25x) |
 | 3000 | 100 ms | 107 ms (1.1x) | 71.2 ms (0.71x) | 84.3 ms (0.84x) | 72.7 ms (0.73x) | not run |
 
-macOS arm64 (Apple silicon), Python 3.13, numpy 2.5, before `vander_fast` existed:
+macOS arm64 (Apple silicon), Python 3.13, numpy 2.5:
 
-| n | np.vander | Nim -d:release | Nim -d:danger | pure Python |
-|---:|---:|---:|---:|---:|
-| 10 | 1.58 µs | 1.05 µs (0.66x) | 761 ns (0.48x) | 3.91 µs (2.5x) |
-| 100 | 11.3 µs | 37.7 µs (3.3x) | 10.6 µs (0.94x) | 402 µs (35x) |
-| 1000 | 1.29 ms | 3.92 ms (3x) | 1.3 ms (1x) | 55.2 ms (43x) |
-| 3000 | 12.9 ms | 35.7 ms (2.8x) | 12.2 ms (0.95x) | not run |
+| n | np.vander | vander | vander_fast | vander -d:danger | vander_fast -d:danger | pure Python |
+|---:|---:|---:|---:|---:|---:|---:|
+| 10 | 1.57 µs | 1.04 µs (0.66x) | 778 ns (0.5x) | 737 ns (0.47x) | 724 ns (0.46x) | 3.87 µs (2.5x) |
+| 100 | 11.1 µs | 37.6 µs (3.4x) | 8.26 µs (0.74x) | 10.5 µs (0.94x) | 6.22 µs (0.56x) | 403 µs (36x) |
+| 1000 | 1.29 ms | 3.95 ms (3x) | 1.19 ms (0.92x) | 1.31 ms (1x) | 1.17 ms (0.91x) | 55.8 ms (43x) |
+| 3000 | 12.9 ms | 35.8 ms (2.8x) | 11 ms (0.86x) | 12.1 ms (0.94x) | 10.9 ms (0.85x) | not run |
 
-On the Mac, `-d:danger` is on par with numpy and `-d:release` up to about 3x slower; at
-n = 3000, numpy took 30.6 ms in one run and 12.9 ms in the next.
+On both machines, with the default build, `vander_fast` is 3 to 4x faster than `vander` and a
+bit faster than `np.vander`; `-d:danger` adds little on top of it.
 
 ## Development
 
