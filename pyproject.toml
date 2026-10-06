@@ -1,0 +1,16 @@
+# Development environment: builds the Nim test modules with nimlang and runs them with pytest.
+# nimpy_numpy itself is a Nim package (see nimpy_numpy.nimble), not a Python one.
+[project]
+name = "nimpy-numpy-dev"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+dev = ["nimlang", "numpy", "pytest"]
+
+[tool.nimlang]
+dependencies = ["nimpy"]
