@@ -9,7 +9,7 @@ return numpy arrays, and call them from Python.
 
 We want to write a nim version for computing a [Vandermonde matrix](https://en.wikipedia.org/wiki/Vandermonde_matrix). We will need a Nim file, `vander.nim`, compiled into a Python extension module and imported from Python.
 
-With Python package [nimlang](https://github.com/pietroppeter/uv-add-nimlang) the whole round trip is:
+With [nimlang-pypi](https://github.com/pietroppeter/uv-add-nimlang) (PyPI package `nimlang`) the whole round trip is:
 
 ```sh
 uv init vander-demo && cd vander-demo
